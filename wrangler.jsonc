@@ -1,0 +1,10 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "balances",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-05-03",
+	"assets": { "binding": "ASSETS", "directory": "./public" },
+	"observability": { "enabled": true },
+	"upload_source_maps": true,
+	"compatibility_flags": [ "nodejs_compat" ]
+}

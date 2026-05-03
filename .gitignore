@@ -1,0 +1,18 @@
+# dev
+.vscode/
+
+# prod
+dist/
+
+# deps
+node_modules/
+bun.lock
+.wrangler
+
+# env
+.env
+.env.production
+.dev.vars*
+!.dev.vars.example
+!.env.example
+worker-configuration.d.ts

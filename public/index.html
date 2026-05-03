@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>My balances</title>
+		<style>
+			:root {
+				color-scheme: light dark;
+				--bg: #0f1216;
+				--surface: #171b22;
+				--border: #2a3140;
+				--text: #e8ecf1;
+				--muted: #8b96a8;
+				--accent: #6ee7b7;
+				--danger: #f87171;
+				--radius: 12px;
+				font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+			}
+			@media (prefers-color-scheme: light) {
+				:root {
+					--bg: #f4f6f9;
+					--surface: #fff;
+					--border: #e1e6ed;
+					--text: #1a1f26;
+					--muted: #5c6778;
+				}
+			}
+			* {
+				box-sizing: border-box;
+			}
+			body {
+				margin: 0;
+				min-height: 100vh;
+				display: grid;
+				place-items: center;
+				padding: 1.5rem;
+				background: var(--bg);
+				color: var(--text);
+				line-height: 1.5;
+			}
+			main {
+				width: min(28rem, 100%);
+				background: var(--surface);
+				border: 1px solid var(--border);
+				border-radius: var(--radius);
+				padding: 1.5rem 1.5rem 1.25rem;
+				box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+			}
+			h1 {
+				margin: 0 0 1rem;
+				font-size: 1.125rem;
+				font-weight: 600;
+				letter-spacing: -0.02em;
+			}
+			dl {
+				margin: 0;
+				display: grid;
+				gap: 0.75rem 1rem;
+			}
+			.row {
+				display: grid;
+				grid-template-columns: auto 1fr;
+				gap: 0.35rem 1rem;
+				align-items: baseline;
+			}
+			dt {
+				margin: 0;
+				font-size: 0.75rem;
+				font-weight: 600;
+				text-transform: uppercase;
+				letter-spacing: 0.06em;
+				color: var(--muted);
+			}
+			dd {
+				margin: 0;
+				font-size: 0.95rem;
+				font-variant-numeric: tabular-nums;
+				text-align: right;
+			}
+			.badge {
+				display: inline-block;
+				padding: 0.15rem 0.5rem;
+				border-radius: 999px;
+				font-size: 0.8rem;
+				font-weight: 600;
+			}
+			.badge.ok {
+				background: color-mix(in srgb, var(--accent) 22%, transparent);
+				color: var(--accent);
+			}
+			.badge.no {
+				background: color-mix(in srgb, var(--danger) 22%, transparent);
+				color: var(--danger);
+			}
+			.state {
+				margin: 0;
+				font-size: 0.9rem;
+				color: var(--muted);
+			}
+			.state.error {
+				color: var(--danger);
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>Venice AI</h1>
+			<p id="state" class="state">Loading…</p>
+			<dl id="panel" hidden></dl>
+		</main>
+		<script>
+			const state = document.getElementById('state');
+			const panel = document.getElementById('panel');
+
+			function fmtDate(iso) {
+				if (iso == null || iso === '') return '—';
+				const d = new Date(iso);
+				return Number.isNaN(d.getTime()) ? String(iso) : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+			}
+
+			function row(label, valueHtml) {
+				const wrap = document.createElement('div');
+				wrap.className = 'row';
+				wrap.innerHTML = `<dt>${label}</dt><dd>${valueHtml}</dd>`;
+				return wrap;
+			}
+
+			fetch('/venice-ai')
+				.then((resp) => {
+					if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
+					return resp.json();
+				})
+				.then((data) => {
+					state.hidden = true;
+					panel.hidden = false;
+					const diemRounded = Math.round(Number(data.diem) * 1000) / 1000;
+					panel.append(
+						row(
+							'Access',
+							data.accessPermitted
+								? '<span class="badge ok">Permitted</span>'
+								: '<span class="badge no">Blocked</span>',
+						),
+						row(
+							'Diem',
+							diemRounded.toLocaleString(undefined, { maximumFractionDigits: 3 }),
+						),
+						row('Next epoch', fmtDate(data.nextEpochBegins)),
+						row('Key expires', fmtDate(data.keyExpiration)),
+					);
+				})
+				.catch((err) => {
+					state.textContent = err instanceof Error ? err.message : 'Request failed';
+					state.classList.add('error');
+				});
+		</script>
+	</body>
+</html>
