@@ -1,21 +1,3 @@
-```txt
-npm install
-npm run dev
-```
+# Balances
 
-```txt
-npm run deploy
-```
-
-[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
-
-```txt
-npm run cf-typegen
-```
-
-Pass the `CloudflareBindings` as generics when instantiation `Hono`:
-
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
-```
+Cloudflare Worker (Hono) showing a public dashboard of Venice AI rate-limit/balance info and Facilitator balance. Allows anyone on the internet to top up the Facilitator
