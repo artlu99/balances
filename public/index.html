@@ -14,6 +14,7 @@
 			--text: #e8ecf1;
 			--muted: #8b96a8;
 			--accent: #6ee7b7;
+			--warn: #fbbf24;
 			--danger: #f87171;
 			--radius: 12px;
 			font-family: system-ui, "Segoe UI", Roboto, sans-serif;
@@ -180,6 +181,79 @@
 		@keyframes spin {
 			to { transform: rotate(360deg); }
 		}
+
+		.balance-cell {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-end;
+			gap: 0.35rem;
+		}
+
+		.balance-fraction {
+			display: flex;
+			align-items: baseline;
+			justify-content: flex-end;
+			gap: 0.4rem;
+			flex-wrap: wrap;
+		}
+
+		.balance-fraction .muted {
+			color: var(--muted);
+			font-size: 0.8rem;
+		}
+
+		.pct-badge {
+			display: inline-block;
+			padding: 0.1rem 0.45rem;
+			border-radius: 999px;
+			font-size: 0.75rem;
+			font-weight: 600;
+			line-height: 1.3;
+		}
+
+		.pct-high {
+			background: color-mix(in srgb, var(--accent) 22%, transparent);
+			color: var(--accent);
+		}
+
+		.pct-mid {
+			background: color-mix(in srgb, var(--warn) 22%, transparent);
+			color: var(--warn);
+		}
+
+		.pct-low {
+			background: color-mix(in srgb, var(--danger) 22%, transparent);
+			color: var(--danger);
+		}
+
+		.pct-bar {
+			width: 100%;
+			height: 6px;
+			border-radius: 999px;
+			background: var(--border);
+			overflow: hidden;
+		}
+
+		.pct-bar-fill {
+			height: 100%;
+			border-radius: 999px;
+			transition: width 0.4s ease;
+		}
+
+		.pct-bar-fill.pct-high {
+			background: var(--accent);
+			box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 40%, transparent);
+		}
+
+		.pct-bar-fill.pct-mid {
+			background: var(--warn);
+			box-shadow: 0 0 6px color-mix(in srgb, var(--warn) 40%, transparent);
+		}
+
+		.pct-bar-fill.pct-low {
+			background: var(--danger);
+			box-shadow: 0 0 6px color-mix(in srgb, var(--danger) 40%, transparent);
+		}
 	</style>
 </head>
 
@@ -252,6 +326,20 @@
 				return wrap;
 			}
 
+			function balanceIndicator(remaining, total, fmt) {
+				const pct = total > 0 ? Math.round((remaining / total) * 100) : null;
+				const tier = pct == null ? 'low' : pct >= 50 ? 'high' : pct >= 20 ? 'mid' : 'low';
+				const fill = pct == null ? 0 : Math.min(pct, 100);
+				const tierClass = { high: 'pct-high', mid: 'pct-mid', low: 'pct-low' }[tier];
+				return `
+					<div class="balance-cell">
+						<div class="balance-fraction">
+							${fmt(remaining)} <span class="muted">/ ${fmt(total)}</span>q
+						</div>
+						<div class="pct-bar"><div class="pct-bar-fill ${tierClass}" style="width:${fill}%"></div></div>
+					</div>`;
+			}
+
 			async function fetchJson(url) {
 				const resp = await fetch(url);
 				const data = await resp.json().catch(() => ({}));
@@ -284,7 +372,7 @@
 				const fmt = (n) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 });
 				panel.append(
 					row('Access', data.accessPermitted ? '<span class="badge ok">Permitted</span>' : '<span class="badge no">Blocked</span>'),
-					row('Diem', `${fmt(diem)} <span style="color:var(--muted);font-size:.8rem">/ ${fmt(staked)}</span>`),
+					row('Diem', balanceIndicator(diem, staked, fmt)),
 					row('Next epoch', `${fmtDate(data.nextEpochBegins)} <span style="color:var(--muted);font-size:.8rem">${fmtDateRelative(data.nextEpochBegins)}</span>`),
 					row('Key expires', `${fmtDate(data.keyExpiration)} <span style="color:var(--muted);font-size:.8rem">${fmtDateRelative(data.keyExpiration)}</span>`),
 				);
