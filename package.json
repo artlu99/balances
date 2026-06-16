@@ -7,13 +7,13 @@
 		"types": "wrangler types --env-interface CloudflareBindings"
 	},
 	"dependencies": {
-		"hono": "^4.12.18",
+		"hono": "^4.12.25",
 		"itty-fetcher": "^1.0.10",
-		"viem": "^2.48.11"
+		"viem": "^2.52.2"
 	},
 	"devDependencies": {
-		"@types/node": "^25.6.2",
-		"bun-types": "^1.3.13",
-		"wrangler": "^4.90.0"
+		"@types/node": "^25.9.2",
+		"bun-types": "^1.3.14",
+		"wrangler": "^4.99.0"
 	}
 }
