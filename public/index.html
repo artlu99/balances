@@ -69,7 +69,7 @@
 		}
 
 		main {
-			width: min(28rem, 100%);
+			width: 100%;
 			background: var(--surface);
 			border: 1px solid var(--border);
 			border-radius: var(--radius);
@@ -276,12 +276,12 @@
 
 <body>
 	<div class="cards">
-	<main>
-		<h1>Venice AI <span id="key-hint" style="color:var(--muted);font-size:.75rem"></span></h1>
-		<p id="state" class="state">Loading…</p>
-		<dl id="panel" hidden></dl>
-	</main>
-	<main x-data="{ address: '', loading: false, sending: false, sent: false, txHash: '', error: '', topupAddress: '', async connect() { if (!window.ethereum) { this.error = 'No wallet detected'; return; } this.loading = true; this.error = ''; try { const [addr] = await window.ethereum.request({ method: 'eth_requestAccounts' }); const chainId = parseInt(await window.ethereum.request({ method: 'eth_chainId' }), 16); if (chainId !== 8453) await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x8453' }] }); const res = await fetch('/topup').then(r => r.json()); this.topupAddress = res.topupAddress; this.address = addr; } catch (err) { this.error = err?.shortMessage || err?.message || 'Connection failed'; } finally { this.loading = false; } }, async send() { this.sending = true; this.error = ''; try { const { parseUnits, encodeFunctionData, parseAbi } = await import('https://esm.sh/viem@2'); const data = encodeFunctionData({ abi: parseAbi(['function transfer(address to, uint256 amount)']), functionName: 'transfer', args: [this.topupAddress, parseUnits('1', 6)] }); const hash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: this.address, to: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', data }] }); this.txHash = hash; this.sent = true; } catch (err) { this.error = err?.shortMessage || err?.message || 'Transaction failed'; } finally { this.sending = false; } } }">
+		<main class="venice-card">
+			<h1>Venice AI <span class="venice-hint" style="color:var(--muted);font-size:.75rem"></span></h1>
+			<p class="venice-state state">Loading…</p>
+			<dl class="venice-panel" hidden></dl>
+		</main>
+		<main x-data="{ address: '', loading: false, sending: false, sent: false, txHash: '', error: '', topupAddress: '', async connect() { if (!window.ethereum) { this.error = 'No wallet detected'; return; } this.loading = true; this.error = ''; try { const [addr] = await window.ethereum.request({ method: 'eth_requestAccounts' }); const chainId = parseInt(await window.ethereum.request({ method: 'eth_chainId' }), 16); if (chainId !== 8453) await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x8453' }] }); const res = await fetch('/topup').then(r => r.json()); this.topupAddress = res.topupAddress; this.address = addr; } catch (err) { this.error = err?.shortMessage || err?.message || 'Connection failed'; } finally { this.loading = false; } }, async send() { this.sending = true; this.error = ''; try { const { parseUnits, encodeFunctionData, parseAbi } = await import('https://esm.sh/viem@2'); const data = encodeFunctionData({ abi: parseAbi(['function transfer(address to, uint256 amount)']), functionName: 'transfer', args: [this.topupAddress, parseUnits('1', 6)] }); const hash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: this.address, to: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', data }] }); this.txHash = hash; this.sent = true; } catch (err) { this.error = err?.shortMessage || err?.message || 'Transaction failed'; } finally { this.sending = false; } } }">
 			<h1>Facilitator <span id="topup-hint" style="color:var(--muted);font-size:.75rem"></span></h1>
 			<p x-show="error" x-text="error" class="state error"></p>
 			<p id="topup-state" class="state" :hidden="address || error">Loading…</p>
@@ -311,6 +311,11 @@
 			<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.3-7"/><polyline points="21 3 21 9 15 9"/></svg>
 			Refresh
 		</button>
+		<main class="venice-card">
+			<h1>Venice AI <span class="venice-hint" style="color:var(--muted);font-size:.75rem"></span></h1>
+			<p class="venice-state state">Loading…</p>
+			<dl class="venice-panel" hidden></dl>
+		</main>
 	</div>
 		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
@@ -318,8 +323,7 @@
 		<script type="module">
 			dayjs.extend(dayjs_plugin_relativeTime);
 
-			const state = document.getElementById('state');
-			const panel = document.getElementById('panel');
+			const veniceCards = [...document.querySelectorAll('.venice-card')];
 			const topupState = document.getElementById('topup-state');
 			const topupPanel = document.getElementById('topup-panel');
 			const refreshBtn = document.getElementById('refresh-btn');
@@ -380,10 +384,25 @@
 				el.classList.add('error');
 			}
 
-			function renderVenice(data) {
+			function renderVenice(card, data) {
+				const state = card.querySelector('.venice-state');
+				const panel = card.querySelector('.venice-panel');
+				const hint = card.querySelector('.venice-hint');
+
+				if (!data.ok) {
+					showError(state, formatAccountError(data));
+					panel.hidden = true;
+					panel.innerHTML = '';
+					if (data.walletHint || data.keyHint) {
+						hint.textContent = formatHint(data.walletHint, data.keyHint);
+					}
+					return;
+				}
+
 				state.hidden = true;
 				panel.hidden = false;
-				document.getElementById('key-hint').textContent = `…${data.keyHint}`;
+				panel.innerHTML = '';
+				hint.textContent = formatHint(data.walletHint, data.keyHint);
 				const diem = Math.round(Number(data.diem) * 1000) / 1000;
 				const staked = Math.round(Number(data.stakedDiem) * 1000) / 1000;
 				const fmt = (n) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 });
@@ -393,6 +412,24 @@
 					row('Next epoch', `${fmtDate(data.nextEpochBegins)} <span style="color:var(--muted);font-size:.8rem">${fmtDateRelative(data.nextEpochBegins)}</span>`),
 					row('Key expires', `${fmtDate(data.keyExpiration)} <span style="color:var(--muted);font-size:.8rem">${fmtDateRelative(data.keyExpiration)}</span>`),
 				);
+			}
+
+			function formatHint(walletHint, keyHint) {
+				const parts = [];
+				if (walletHint) parts.push(walletHint);
+				if (keyHint) parts.push(`key …${keyHint}`);
+				return parts.join(' · ');
+			}
+
+			function formatAccountError(data) {
+				const step = data.step ? ` (${data.step})` : '';
+				return `${data.error ?? 'Request failed'}${step}`;
+			}
+
+			function renderVeniceAccounts(data) {
+				data.accounts.forEach((account, i) => {
+					if (veniceCards[i]) renderVenice(veniceCards[i], account);
+				});
 			}
 
 			function renderTopup(data) {
@@ -408,11 +445,18 @@
 			function refresh() {
 				refreshBtn.disabled = true;
 				refreshBtn.classList.add('loading');
-				resetPanel(state, panel);
+				veniceCards.forEach((card) => {
+					resetPanel(card.querySelector('.venice-state'), card.querySelector('.venice-panel'));
+					card.querySelector('.venice-hint').textContent = '';
+				});
 				resetPanel(topupState, topupPanel);
 
 				Promise.all([
-					fetchJson('/venice-ai').then(renderVenice).catch((err) => showError(state, err)),
+					fetchJson('/venice-ai').then(renderVeniceAccounts).catch((err) => {
+						veniceCards.forEach((card) => {
+							showError(card.querySelector('.venice-state'), err);
+						});
+					}),
 					fetchJson('/topup').then(renderTopup).catch((err) => showError(topupState, err)),
 				]).finally(() => {
 					refreshBtn.disabled = false;
